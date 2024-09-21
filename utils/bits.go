@@ -31,3 +31,40 @@ func CountBit1(n uint64) int {
 	}
 	return sum
 }
+
+// 将document属性编辑到位图
+type Candidate struct {
+	Id     int
+	Gender string
+	Vip    bool
+	Active int
+	Bits   uint64 //存储上方信息到bit中
+}
+
+const (
+	MALE        = 1
+	VIP         = 1 << 1
+	WEEK_ACTIVE = 1 << 2
+)
+
+func (c *Candidate) SetMale() {
+	c.Gender = "男"
+	c.Bits = c.Bits | MALE
+}
+
+func (c *Candidate) SetVip() {
+	c.Vip = true
+	c.Bits = c.Bits | VIP
+}
+
+func (c *Candidate) SetActive(day int) {
+	c.Active = day
+	if day <= 7 {
+		c.Bits = c.Bits | WEEK_ACTIVE
+	}
+}
+
+// 判断多个条件是否满足：将条件先编码进入on这个bits
+func (c Candidate) Filter2(on uint64) bool {
+	return c.Bits&on == on
+}
