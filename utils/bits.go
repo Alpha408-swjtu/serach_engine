@@ -68,3 +68,50 @@ func (c *Candidate) SetActive(day int) {
 func (c Candidate) Filter2(on uint64) bool {
 	return c.Bits&on == on
 }
+
+// 位图求交集算法
+type BitMap struct {
+	Table uint64
+}
+
+func CreateBitMap(min int, arr []int) *BitMap {
+	bitMap := new(BitMap)
+	for _, ele := range arr {
+		index := ele - min
+		bitMap.Table = SetBit1(bitMap.Table, index) //将位图的index位置1
+	}
+	return bitMap
+}
+
+func IntersectionOfBitMap(bm1, bm2 *BitMap, min int) []int {
+	result := make([]int, 0, 100)
+	s := bm1.Table & bm2.Table
+	for i := 1; i <= 64; i++ {
+		if IsBit1(s, i) {
+			result = append(result, i+min)
+		}
+	}
+	return result
+}
+
+// 有序数组求交集算法
+func IntersectionOfOrderedList(arr, brr []int) []int {
+	m, n := len(arr), len(brr)
+	if m == 0 || n == 0 {
+		return nil
+	}
+	result := []int{}
+	var i, j int
+	for i < m && j < n {
+		if arr[i] == brr[j] {
+			result = append(result, arr[i])
+			i++
+			j++
+		} else if arr[i] < brr[j] {
+			i++
+		} else {
+			j++
+		}
+	}
+	return result
+}
