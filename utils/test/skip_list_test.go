@@ -55,4 +55,14 @@ func TestIntersectionOfSkipList(t *testing.T) {
 			node = node.Next()
 		}
 	}
+
+	fmt.Println("------------------------------------------")
+	union := utils.UnionsetOfSkipList(l1, l2, l3)
+	if union != nil {
+		node := union.Front()
+		for node != nil {
+			fmt.Println(node.Key().(uint64))
+			node = node.Next()
+		}
+	}
 }

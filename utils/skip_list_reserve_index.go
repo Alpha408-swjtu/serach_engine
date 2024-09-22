@@ -50,3 +50,29 @@ func IntersectionOfSkipList(lists ...*skiplist.SkipList) *skiplist.SkipList {
 		}
 	}
 }
+
+//多个调表求并集
+func UnionsetOfSkipList(lists ...*skiplist.SkipList) *skiplist.SkipList {
+	if len(lists) == 0 {
+		return nil
+	}
+	if len(lists) == 1 {
+		return lists[0]
+	}
+	result := skiplist.New(skiplist.Uint64)
+	keySet := make(map[any]struct{}, 1000)
+	for _, list := range lists {
+		if list == nil {
+			continue
+		}
+		node := list.Front()
+		for node != nil {
+			if _, exists := keySet[node.Key()]; !exists {
+				result.Set(node.Key(), node.Value)
+				keySet[node.Key()] = struct{}{}
+			}
+			node = node.Next()
+		}
+	}
+	return result
+}
