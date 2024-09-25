@@ -33,12 +33,14 @@ func (indexer *SkipListReserveIndex) getLock(key string) *sync.RWMutex {
 	h := int(farmhash.Hash32WithSeed([]byte(key), 0))
 	return &indexer.locks[h%len(indexer.locks)]
 }
+
 func (indexer *SkipListReserveIndex) Add(doc *types.Document) {
 	//遍历文章中的所有关键词
 	for _, Keyword := range doc.Keywords {
 		key := Keyword.Tostring()
 		lock := indexer.getLock(key)
 		lock.Lock()
+		defer lock.Unlock()
 		skipListValue := &SkipListValue{doc.Id, doc.BitsFeature}
 		if value, exists := indexer.table.Get(key); exists {
 			list := value.(*skiplist.SkipList)
@@ -47,6 +49,16 @@ func (indexer *SkipListReserveIndex) Add(doc *types.Document) {
 			list := skiplist.New(skiplist.Uint64)
 			list.Set(doc.Id, skipListValue)
 		}
-		lock.Unlock()
+	}
+}
+
+func (indexer *SkipListReserveIndex) Delete(IntId uint64, keyWord *types.Keyword) {
+	key := keyWord.Tostring()
+	lock := indexer.getLock(key)
+	lock.Lock()
+	defer lock.Unlock()
+	if value, exists := indexer.table.Get(key); exists {
+		list := value.(*skiplist.SkipList)
+		list.Remove(IntId)
 	}
 }
