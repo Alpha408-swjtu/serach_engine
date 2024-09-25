@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package types;
+
+message Keyword {
+    string Field = 1;
+    string Word = 2;
+}
+
+message Document {
+    string Id = 1;
+    uint64  IntId = 2;
+    uint64 BitsFeature = 3 ;
+    repeated Keyword Keywords = 4;
+    bytes Bytes = 5; //业务实体序列化后的结果
+}
+
+//转成go文件 
+//github下protoc
+//go install github.com/gogo/protobuf/protoc-gen-gogofaster@latest，都要添加在环境变量里面！！！
+//protoc --gogofaster_out=./types --proto_path=./types doc.proto
