@@ -2,7 +2,7 @@ package test
 
 import (
 	"fmt"
-	"search_engine/utils"
+	reverseindex "search_engine/internal/reverse_index"
 	"testing"
 
 	"github.com/huandu/skiplist"
@@ -47,7 +47,7 @@ func TestIntersectionOfSkipList(t *testing.T) {
 	l3.Set(uint64(7), 0)
 	l3.Set(uint64(9), 0)
 
-	insert := utils.IntersectionOfSkipList(l1, l2, l3)
+	insert := reverseindex.IntersectionOfSkipList(l1, l2, l3)
 	if insert != nil {
 		node := insert.Front()
 		for node != nil {
@@ -57,7 +57,7 @@ func TestIntersectionOfSkipList(t *testing.T) {
 	}
 
 	fmt.Println("------------------------------------------")
-	union := utils.UnionsetOfSkipList(l1, l2, l3)
+	union := reverseindex.UnionsetOfSkipList(l1, l2, l3)
 	if union != nil {
 		node := union.Front()
 		for node != nil {
