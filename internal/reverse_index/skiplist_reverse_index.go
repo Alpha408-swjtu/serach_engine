@@ -63,7 +63,7 @@ func (indexer *SkipListReserveIndex) Delete(IntId uint64, keyWord *types.Keyword
 	}
 }
 
-//多个跳表求交集
+// 多个跳表求交集
 func IntersectionOfSkipList(lists ...*skiplist.SkipList) *skiplist.SkipList {
 	if len(lists) == 0 {
 		return nil
@@ -112,7 +112,7 @@ func IntersectionOfSkipList(lists ...*skiplist.SkipList) *skiplist.SkipList {
 	}
 }
 
-//多个跳表求并集
+// 多个跳表求并集
 func UnionsetOfSkipList(lists ...*skiplist.SkipList) *skiplist.SkipList {
 	if len(lists) == 0 {
 		return nil
