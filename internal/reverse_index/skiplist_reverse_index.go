@@ -137,3 +137,71 @@ func UnionsetOfSkipList(lists ...*skiplist.SkipList) *skiplist.SkipList {
 	}
 	return result
 }
+
+// 按照bits特征进行过滤 满足on：bits&on == on；满足off：bits&off == 0 满足or:bits&or > 1
+func (indexer SkipListReserveIndex) FilterByBits(bits uint64, onFlag uint64, offFlag uint64, orFlags []uint64) bool {
+	if bits&onFlag != onFlag {
+		return false
+	}
+	if bits&offFlag != 0 {
+		return false
+	}
+	for _, orFlag := range orFlags {
+		if orFlag&bits < 1 {
+			return false
+		}
+	}
+	return true
+}
+
+// 搜索功能
+func (indexer SkipListReserveIndex) search(q *types.TermQuery, onFlag uint64, offFlag uint64, orFlags []uint64) *skiplist.SkipList {
+	if q.Keyword != nil {
+		keyWord := q.Keyword.Tostring()
+		if value, exists := indexer.table.Get(keyWord); exists {
+			result := skiplist.New(skiplist.Uint64)
+			list := value.(*skiplist.SkipList)
+
+			node := list.Front()
+			for node != nil {
+				intId := node.Key().(uint64)
+				skv, _ := node.Value.(SkipListValue)
+				flag := skv.BitsFeature
+				if intId > 0 && indexer.FilterByBits(flag, onFlag, offFlag, orFlags) {
+					result.Set(intId, skv)
+				}
+				node = node.Next()
+			}
+			return result
+		}
+	} else if len(q.Must) > 0 {
+		results := make([]*skiplist.SkipList, 0, len(q.Must))
+		for _, q := range q.Must {
+			results = append(results, indexer.search(q, onFlag, offFlag, orFlags))
+		}
+		return IntersectionOfSkipList(results...) //must求交集！！！
+	} else if len(q.Should) > 0 {
+		results := make([]*skiplist.SkipList, 0, len(q.Should))
+		for _, q := range q.Should {
+			results = append(results, indexer.search(q, onFlag, offFlag, orFlags))
+		}
+		return UnionsetOfSkipList(results...) //should求并集！！
+	}
+	return nil
+}
+
+// 返回docId的搜索功能
+func (indexer SkipListReserveIndex) Search(query *types.TermQuery, onFlag uint64, offFlag uint64, orFlags []uint64) []string {
+	result := indexer.search(query, onFlag, offFlag, orFlags)
+	if result == nil {
+		return nil
+	}
+	arr := make([]string, 0, result.Len())
+	node := result.Front()
+	for node != nil {
+		skv := node.Value.(SkipListValue)
+		arr = append(arr, skv.Id)
+		node = node.Next()
+	}
+	return arr
+}
