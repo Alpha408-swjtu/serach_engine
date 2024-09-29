@@ -7,8 +7,6 @@ import (
 	bolt "go.etcd.io/bbolt"
 )
 
-var NoDataErr = errors.New("no data")
-
 type Bolt struct {
 	db     *bolt.DB
 	path   string //存储路径
@@ -77,7 +75,7 @@ func (s *Bolt) Get(k []byte) ([]byte, error) {
 		return nil
 	})
 	if len(result) == 0 {
-		return nil, NoDataErr
+		return nil, errors.New("没有数据")
 	}
 	return result, err
 }
