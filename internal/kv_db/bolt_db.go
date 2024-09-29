@@ -2,6 +2,7 @@ package kvdb
 
 import (
 	"errors"
+	"sync/atomic"
 
 	bolt "go.etcd.io/bbolt"
 )
@@ -67,4 +68,96 @@ func (s *Bolt) BatchSet(keys, values [][]byte) error {
 	})
 	return err
 
+}
+
+func (s *Bolt) Get(k []byte) ([]byte, error) {
+	var result []byte
+	err := s.db.View(func(tx *bolt.Tx) error {
+		result = tx.Bucket(s.bucket).Get(k)
+		return nil
+	})
+	if len(result) == 0 {
+		return nil, NoDataErr
+	}
+	return result, err
+}
+
+func (s *Bolt) BatchGet(keys [][]byte) ([][]byte, error) {
+	var err error
+	result := make([][]byte, 0, len(keys))
+	s.db.Batch(func(tx *bolt.Tx) error {
+		for i, key := range keys {
+			ival := tx.Bucket(s.bucket).Get(key)
+			result[i] = ival
+		}
+		return nil
+	})
+	return result, err
+}
+
+func (s *Bolt) Delete(k []byte) error {
+	return s.db.Update(func(tx *bolt.Tx) error {
+		return tx.Bucket(s.bucket).Delete(k)
+	})
+}
+
+func (s *Bolt) BatchDelete(keys [][]byte) error {
+	var err error
+	s.db.Batch(func(tx *bolt.Tx) error {
+		for _, key := range keys {
+			tx.Bucket(s.bucket).Delete(key)
+		}
+		return nil
+	})
+	return err
+}
+
+func (s *Bolt) Has(key []byte) bool {
+	var b []byte
+	err := s.db.View(func(tx *bolt.Tx) error {
+		b = tx.Bucket(s.bucket).Get(key)
+		return nil
+	})
+	if err != nil || string(b) == "" {
+		return false
+	}
+	return true
+}
+
+func (s *Bolt) IterDB(fn func(k, v []byte) error) int64 {
+	var result int64
+	s.db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket(s.bucket)
+		c := b.Cursor()
+		for k, v := c.First(); k != nil; k, v = c.Next() {
+			if err := fn(k, v); err != nil {
+				return err
+			} else {
+				atomic.AddInt64(&result, 1)
+			}
+		}
+		return nil
+	})
+	return result
+}
+
+func (s *Bolt) IterKey(fn func(k []byte) error) int64 {
+	var result int64
+	s.db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket(s.bucket)
+		c := b.Cursor()
+		for k, _ := c.First(); k != nil; k, _ = c.Next() {
+			if err := fn(k); err != nil {
+				return err
+			} else {
+				atomic.AddInt64(&result, 1)
+			}
+		}
+		return nil
+	})
+	return result
+}
+
+func (s *Bolt) Close() error {
+	return s.db.Close()
 }
