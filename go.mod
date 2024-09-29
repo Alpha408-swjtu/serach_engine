@@ -9,3 +9,8 @@ require golang.org/x/exp v0.0.0-20240909161429-701f63a606c0
 require github.com/huandu/skiplist v1.2.0
 
 require github.com/gogo/protobuf v1.3.2
+
+require (
+	go.etcd.io/bbolt v1.3.11 // indirect
+	golang.org/x/sys v0.4.0 // indirect
+)
