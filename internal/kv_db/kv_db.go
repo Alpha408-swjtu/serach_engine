@@ -34,7 +34,7 @@ func GetKvDb(dbtype int, path string) (IKeyValueDB, error) {
 
 	info, err := os.Stat(parentPath)
 	if os.IsNotExist(err) {
-		fmt.Printf("创建路径:%s", parentPath)
+		fmt.Printf("创建路径:%s\n", parentPath)
 		os.MkdirAll(parentPath, 0o600)
 	} else {
 		if info.Mode().IsRegular() {
@@ -48,7 +48,7 @@ func GetKvDb(dbtype int, path string) (IKeyValueDB, error) {
 	case BADGER:
 		db = new(Badger).WithDataPath(path)
 	default:
-		db = new(Bolt).WithDataPath(path).WithBucket("radic")
+		db = new(Bolt).WithDataPath(path).WithBucket("Alpha")
 	}
 
 	err = db.Open()
