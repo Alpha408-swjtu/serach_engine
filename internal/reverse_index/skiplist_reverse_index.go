@@ -34,7 +34,7 @@ func (indexer *SkipListReserveIndex) getLock(key string) *sync.RWMutex {
 	return &indexer.locks[h%len(indexer.locks)]
 }
 
-func (indexer *SkipListReserveIndex) Add(doc *types.Document) {
+func (indexer *SkipListReserveIndex) Add(doc types.Document) {
 	//遍历文章中的所有关键词
 	for _, Keyword := range doc.Keywords {
 		key := Keyword.Tostring()
