@@ -16,6 +16,7 @@ const SERVICE_ROOT_PATH = "/alpha/index"
 type ServiceHub struct {
 	Client             *etcdv3.Client
 	heartbeatFrequency int
+	loadBalance        LoadBalance // 选择哪种负载均衡策略，在构造函数中赋值
 }
 
 var (
@@ -37,6 +38,7 @@ func GetServiceHub(etcdServers []string, heartbeayFrequency int) *ServiceHub {
 				serviceHub = &ServiceHub{
 					Client:             client,
 					heartbeatFrequency: heartbeayFrequency,
+					loadBalance:        &RoundRobin{}, //此处选取轮询策略
 				}
 			}
 		})
@@ -82,7 +84,8 @@ func (hub *ServiceHub) UnRegist(service string, endPoint string) error {
 	}
 }
 
-func (hub *ServiceHub) GetServiceEndpoint(service string) []string {
+// 返回多个服务器ip
+func (hub *ServiceHub) GetServiceEndpoints(service string) []string {
 	ctx := context.Background()
 	prefix := strings.TrimRight(SERVICE_ROOT_PATH, "/") + "/" + service + "/"
 	if rep, err := hub.Client.Get(ctx, prefix, etcdv3.WithPrefix()); err != nil {
@@ -97,4 +100,9 @@ func (hub *ServiceHub) GetServiceEndpoint(service string) []string {
 		log.Printf("获取节点成功")
 		return endpoints
 	}
+}
+
+// 经负载均衡算法,只返回一个服务器ip
+func (hub *ServiceHub) GetServiceEndpoint(service string) string {
+	return hub.loadBalance.Take(hub.GetServiceEndpoints(service))
 }
