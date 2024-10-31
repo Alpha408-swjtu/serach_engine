@@ -1,23 +1,39 @@
 package utils
 
 import (
+	"bytes"
+	"fmt"
 	"log"
 	"os"
-	"path"
-	"runtime"
 
 	"github.com/sirupsen/logrus"
 )
 
 var (
-	Logger   *logrus.Logger
-	level    = "debug"
-	rootPath string
+	Logger *logrus.Logger
+	level  = "debug"
+	//rootPath string
 )
 
-func getRootPath() (string, int) {
-	_, filename, line, _ := runtime.Caller(0)
-	return path.Dir(path.Dir(filename) + "/../"), line
+type CustomFormatter struct{}
+
+// Format 是CustomFormatter必须实现的方法，用于格式化日志条目
+func (f *CustomFormatter) Format(entry *logrus.Entry) ([]byte, error) {
+	var b *bytes.Buffer
+	if entry.Buffer != nil {
+		b = entry.Buffer
+	} else {
+		b = &bytes.Buffer{}
+	}
+
+	timestamp := entry.Time.Format("2006-01-02 15:04:05")
+	level := entry.Level.String()
+	msg := entry.Message
+	fileName := entry.Caller.File
+	lineNumber := entry.Caller.Line
+	fmt.Fprintf(b, "时间:%s----- 级别:%s----- 内容:%s -----位置:%s:%d\n", timestamp, level, msg, fileName, lineNumber)
+
+	return b.Bytes(), nil
 }
 
 func init() {
@@ -38,12 +54,8 @@ func init() {
 		log.Fatalf("设置日志级别有误:%s", level)
 	}
 
-	Logger.Formatter = &logrus.TextFormatter{
-		ForceColors:     true, // 控制台日志显示颜色
-		DisableColors:   false,
-		FullTimestamp:   true,                  // 显示完整的时间戳
-		TimestampFormat: "2006-01-02 15:04:05", // 自定义时间戳格式
-	}
-
+	formatter := new(CustomFormatter)
+	Logger.SetFormatter(formatter)
+	Logger.SetReportCaller(true)
 	Logger.Out = os.Stdout
 }

@@ -111,7 +111,7 @@ func (indexer *Indexer) Search(query *types.TermQuery, onFlag uint64, offFlag ui
 	}
 	data, err := indexer.forwardIndex.BatchGet(keys)
 	if err != nil {
-		utils.Logger.Panic("读取kv数据库失败")
+		utils.Logger.Warn("读取kv数据库失败")
 		return nil
 	}
 	result := make([]*types.Document, 0, len(data))
