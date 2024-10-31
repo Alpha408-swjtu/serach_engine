@@ -13,6 +13,8 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/sirupsen/logrus v1.9.3
 	go.etcd.io/bbolt v1.3.11
+	go.etcd.io/etcd/api/v3 v3.5.16
+	go.etcd.io/etcd/client/v3 v3.5.16
 	golang.org/x/time v0.7.0
 	gorm.io/driver/mysql v1.5.7
 	gorm.io/gorm v1.25.12
@@ -32,9 +34,7 @@ require (
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	go.etcd.io/etcd/api/v3 v3.5.16 // indirect
 	go.etcd.io/etcd/client/pkg/v3 v3.5.16 // indirect
-	go.etcd.io/etcd/client/v3 v3.5.16 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
