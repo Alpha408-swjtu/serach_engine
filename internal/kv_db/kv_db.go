@@ -1,8 +1,8 @@
 package kvdb
 
 import (
-	"fmt"
 	"os"
+	"search_engine/utils"
 	"strings"
 )
 
@@ -34,11 +34,11 @@ func GetKvDb(dbtype int, path string) (IKeyValueDB, error) {
 
 	info, err := os.Stat(parentPath)
 	if os.IsNotExist(err) {
-		fmt.Printf("创建路径:%s\n", parentPath)
+		utils.Logger.Infof("创建路径:%s\n", parentPath)
 		os.MkdirAll(parentPath, 0o600)
 	} else {
 		if info.Mode().IsRegular() {
-			fmt.Printf("%s 是一个文件，不是目录，需要删除。", parentPath)
+			utils.Logger.Warnf("%s 是一个文件，不是目录，需要删除。", parentPath)
 			os.Remove(parentPath)
 		}
 	}

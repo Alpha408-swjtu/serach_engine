@@ -3,11 +3,10 @@ package index_service
 import (
 	"bytes"
 	"encoding/gob"
-	"fmt"
-	"log"
 	kvdb "search_engine/internal/kv_db"
 	reverseindex "search_engine/internal/reverse_index"
 	"search_engine/types"
+	"search_engine/utils"
 	"strings"
 	"sync/atomic"
 )
@@ -90,13 +89,13 @@ func (indexer *Indexer) LoadFromIndexFile() int {
 		var doc types.Document
 		err := decoder.Decode(&doc)
 		if err != nil {
-			log.Print("解码失败！")
+			utils.Logger.Panic("解码失败")
 			return nil
 		}
 		indexer.reverseIndex.Add(doc)
 		return err
 	})
-	log.Printf("从正排索引获取到:%d条数据", n)
+	utils.Logger.Infof("从正排索引获取到:%d条数据", n)
 	return int(n)
 }
 
@@ -112,7 +111,7 @@ func (indexer *Indexer) Search(query *types.TermQuery, onFlag uint64, offFlag ui
 	}
 	data, err := indexer.forwardIndex.BatchGet(keys)
 	if err != nil {
-		fmt.Println("读取kv数据库失败")
+		utils.Logger.Panic("读取kv数据库失败")
 		return nil
 	}
 	result := make([]*types.Document, 0, len(data))

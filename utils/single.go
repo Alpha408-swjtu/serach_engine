@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"fmt"
 	"sync"
 
 	"gorm.io/driver/mysql"
@@ -20,10 +19,10 @@ func GetDB1() *gorm.DB {
 		if single == nil {
 			single, _ = gorm.Open(mysql.Open(""))
 		} else {
-			fmt.Println("单例已经被创建")
+			Logger.Info("单例已经被创建")
 		}
 	} else {
-		fmt.Println("单例已经被创建")
+		Logger.Info("单例已经被创建")
 	}
 	return single
 }
@@ -34,7 +33,7 @@ func GetDB2() *gorm.DB {
 			single, _ = gorm.Open(mysql.Open(""))
 		})
 	} else {
-		fmt.Println("单例已经被创建")
+		Logger.Info("单例已经被创建")
 	}
 	return single
 }
