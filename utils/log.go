@@ -3,7 +3,6 @@ package utils
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/sirupsen/logrus"
@@ -11,8 +10,6 @@ import (
 
 var (
 	Logger *logrus.Logger
-	level  = "debug"
-	//rootPath string
 )
 
 type CustomFormatter struct{}
@@ -39,21 +36,7 @@ func (f *CustomFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 func init() {
 	Logger = logrus.New()
 
-	switch level {
-	case "debug":
-		Logger.SetLevel(logrus.DebugLevel)
-	case "warn":
-		Logger.SetLevel(logrus.WarnLevel)
-	case "error":
-		Logger.SetLevel(logrus.ErrorLevel)
-	case "info":
-		Logger.SetLevel(logrus.InfoLevel)
-	case "panic":
-		Logger.SetLevel(logrus.PanicLevel)
-	default:
-		log.Fatalf("设置日志级别有误:%s", level)
-	}
-
+	Logger.SetLevel(logrus.DebugLevel)
 	formatter := new(CustomFormatter)
 	Logger.SetFormatter(formatter)
 	Logger.SetReportCaller(true)

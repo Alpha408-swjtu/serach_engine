@@ -90,7 +90,7 @@ func (hub *ServiceHub) UnRegist(service string, endpoint string) error {
 		utils.Logger.Warnf("注销服务%s对应的节点%s失败: %v", service, endpoint, err)
 		return err
 	} else {
-		utils.Logger.Infof("注销服务%s对应的节点%s", service, endpoint)
+		utils.Logger.Infof("注销服务%s对应的节点%s成功", service, endpoint)
 		return nil
 	}
 }
