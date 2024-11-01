@@ -28,7 +28,7 @@ func (f *CustomFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	msg := entry.Message
 	fileName := entry.Caller.File
 	lineNumber := entry.Caller.Line
-	fmt.Fprintf(b, "时间:%s----- 级别:%s----- 内容:%s -----位置:%s:%d\n", timestamp, level, msg, fileName, lineNumber)
+	fmt.Fprintf(b, "%s---时间:%s-----位置:%s:%d---内容:%s\n", level, timestamp, fileName, lineNumber, msg)
 
 	return b.Bytes(), nil
 }

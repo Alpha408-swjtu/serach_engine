@@ -95,7 +95,7 @@ func (hub *ServiceHub) UnRegist(service string, endpoint string) error {
 	}
 }
 
-func (hub *ServiceHub) GetServiceEndPoints(service string) []string {
+func (hub *ServiceHub) GetServiceEndpoints(service string) []string {
 	ctx := context.Background()
 	prefix := strings.TrimRight(SERVICE_ROOT_PATH, "/") + "/" + service + "/"
 	if resp, err := hub.client.Get(ctx, prefix, etcdv3.WithPrefix()); err != nil {
@@ -111,6 +111,6 @@ func (hub *ServiceHub) GetServiceEndPoints(service string) []string {
 	}
 }
 
-func (hub *ServiceHub) GetServiceEndPoint(service string) string {
-	return hub.loadBalancer.Take(hub.GetServiceEndPoints(service))
+func (hub *ServiceHub) GetServiceEndpoint(service string) string {
+	return hub.loadBalancer.Take(hub.GetServiceEndpoints(service))
 }
