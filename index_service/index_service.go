@@ -1,131 +1,87 @@
 package index_service
 
 import (
-	"bytes"
-	"encoding/gob"
-	kvdb "search_engine/internal/kv_db"
-	reverseindex "search_engine/internal/reverse_index"
-	"search_engine/types"
+	"context"
+	types "search_engine/types"
 	"search_engine/utils"
-	"strings"
-	"sync/atomic"
+	"strconv"
+	"time"
 )
 
-// 将正排索引和倒排索引放在一起
-type Indexer struct {
-	forwardIndex kvdb.IKeyValueDB
-	reverseIndex reverseindex.IReverseIndexr
-	maxIntId     uint64
+const (
+	INDEX_SERVICE = "index_service"
+)
+
+type IndexServiceWorker struct {
+	Indexer  *Indexer //正排倒排放一块
+	hub      *ServiceHub
+	selfAddr string
 }
 
-func (indexer *Indexer) Init(DocNumEstimate int, dbType int, DataDir string) error {
-	db, err := kvdb.GetKvDb(dbType, DataDir)
-	if err != nil {
-		return err
+func (service *IndexServiceWorker) Init(DocNumEstimate int, dbtype int, DataDir string, etcdServers []string, servicePort int) error {
+	//开启正排索引
+	service.Indexer = new(Indexer)
+	service.Indexer.Init(DocNumEstimate, dbtype, DataDir)
+
+	//注册
+	if len(etcdServers) > 0 {
+		if servicePort <= 1024 {
+			utils.Logger.Errorf("端口非法:%v", servicePort)
+		}
+		selfLocalIP, err := utils.GetLocalIP()
+		if err != nil {
+			utils.Logger.Panicf("获取不到IP地址:%v", err)
+			return err
+		}
+
+		selfLocalIP = "127.0.0.1" //单机演示写死，多机分布再改
+		service.selfAddr = selfLocalIP + ":" + strconv.Itoa(servicePort)
+
+		var heartBeat int64 = 3
+		hub := GetServiceHub(etcdServers, heartBeat)
+		leaseId, err := hub.Regist(INDEX_SERVICE, service.selfAddr, 0)
+		if err != nil {
+			utils.Logger.Panicf("创建租约失败:%v", err)
+			return err
+		}
+		service.hub = hub
+
+		go func() {
+			for { //一直注册
+				hub.Regist(INDEX_SERVICE, service.selfAddr, leaseId)
+				time.Sleep(time.Duration(heartBeat)*time.Second - 100*time.Millisecond)
+			}
+		}()
 	}
-	indexer.forwardIndex = db
-	indexer.reverseIndex = reverseindex.NewSkipListReserveIndex(DocNumEstimate)
+
 	return nil
 }
 
-func (indexer *Indexer) Close() error {
-	return indexer.forwardIndex.Close()
+func (service *IndexServiceWorker) LoadFromIndexFile() int {
+	return service.Indexer.LoadFromIndexFile()
 }
 
-func (indexer *Indexer) AddDoc(doc types.Document) (int, error) {
-	docId := strings.TrimSpace(doc.Id)
-	if len(docId) == 0 {
-		return 0, nil
+func (service *IndexServiceWorker) Close() error {
+	//注销etcd
+	if service.hub != nil {
+		service.hub.UnRegist(INDEX_SERVICE, service.selfAddr)
 	}
-	indexer.DeleteDoc(docId)
-
-	doc.IntId = atomic.AddUint64(&indexer.maxIntId, 1)
-
-	//写入正排索引,业务侧id和文档序列化结果
-	var value bytes.Buffer
-	encoder := gob.NewEncoder(&value)
-	if err := encoder.Encode(doc); err == nil {
-		indexer.forwardIndex.Set([]byte(docId), value.Bytes())
-	} else {
-		return 0, err
-	}
-
-	//写入倒排索引
-	indexer.reverseIndex.Add(doc)
-	return 1, nil
+	//关闭正排索引(kvdb)
+	return service.Indexer.Close()
 }
 
-func (indexer *Indexer) DeleteDoc(docId string) int {
-	n := 0
-	forwardKey := []byte(docId)
-	//先读正排，用key拿到文章中的keyword
-	docBs, err := indexer.forwardIndex.Get(forwardKey)
-	if err == nil {
-		reader := bytes.NewReader([]byte{})
-		if len(docBs) > 0 {
-			n = 1
-			reader.Reset(docBs)
-			decoder := gob.NewDecoder(reader)
-			var doc types.Document
-			err := decoder.Decode(&doc)
-			if err == nil {
-				for _, keyword := range doc.Keywords {
-					indexer.reverseIndex.Delete(doc.IntId, keyword)
-				}
-			}
-		}
-	}
-	//从正排索引删除
-	indexer.forwardIndex.Delete(forwardKey)
-	return n
+func (service *IndexServiceWorker) DeleteDoc(ctx context.Context, docId *DocId) (*AffectedCount, error) {
+	return &AffectedCount{int32(service.Indexer.DeleteDoc(docId.DocId))}, nil
 }
 
-// 系统重启，直接从正排索引加载文件到倒排
-func (indexer *Indexer) LoadFromIndexFile() int {
-	reader := bytes.NewReader([]byte{})
-	n := indexer.forwardIndex.IterDB(func(k, v []byte) error {
-		reader.Reset(v)
-		decoder := gob.NewDecoder(reader)
-		var doc types.Document
-		err := decoder.Decode(&doc)
-		if err != nil {
-			utils.Logger.Panic("解码失败")
-			return nil
-		}
-		indexer.reverseIndex.Add(doc)
-		return err
-	})
-	utils.Logger.Infof("从正排索引获取到:%d条数据", n)
-	return int(n)
+// 向索引中添加文档(如果已存在，会先删除)
+func (service *IndexServiceWorker) AddDoc(ctx context.Context, doc *types.Document) (*AffectedCount, error) {
+	n, err := service.Indexer.AddDoc(*doc)
+	return &AffectedCount{int32(n)}, err
 }
 
-// 搜索思路：先从倒排索引搜索出文章id，再从kv数据库读取文章完整内容并解码
-func (indexer *Indexer) Search(query *types.TermQuery, onFlag uint64, offFlag uint64, orFlags []uint64) []*types.Document {
-	docIds := indexer.reverseIndex.Search(query, onFlag, offFlag, orFlags)
-	if len(docIds) == 0 {
-		return nil
-	}
-	keys := make([][]byte, 0, len(docIds))
-	for _, docId := range docIds {
-		keys = append(keys, []byte(docId))
-	}
-	data, err := indexer.forwardIndex.BatchGet(keys)
-	if err != nil {
-		utils.Logger.Warn("读取kv数据库失败")
-		return nil
-	}
-	result := make([]*types.Document, 0, len(data))
-	reader := bytes.NewReader([]byte{})
-	for _, docBs := range data {
-		if len(docBs) > 0 {
-			reader.Reset(docBs)
-			decoder := gob.NewDecoder(reader)
-			var doc types.Document
-			err := decoder.Decode(&doc)
-			if err != nil {
-				result = append(result, &doc)
-			}
-		}
-	}
-	return result
+// 检索，返回文档列表
+func (service *IndexServiceWorker) Search(ctx context.Context, request *SearchRequest) (*SearchResult, error) {
+	result := service.Indexer.Search(request.Query, request.OnFlag, request.OffFlag, request.OrFlags)
+	return &SearchResult{Results: result}, nil
 }

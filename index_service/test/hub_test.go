@@ -22,20 +22,23 @@ func TestServiceHub(t *testing.T) {
 
 	proxy.Regist(service, endpoint1, 0)
 	defer proxy.UnRegist(service, endpoint1)
+	time.Sleep(1 * time.Second)
 	result := proxy.GetServiceEndpoints(service)
 	fmt.Println(result)
 
 	proxy.Regist(service, endpoint2, 0)
 	defer proxy.UnRegist(service, endpoint2)
+	time.Sleep(1 * time.Second)
 	result = proxy.GetServiceEndpoints(service)
 	fmt.Println(result)
 
 	proxy.Regist(service, endpoint3, 0)
 	defer proxy.UnRegist(service, endpoint3)
+	time.Sleep(1 * time.Second)
 	result = proxy.GetServiceEndpoints(service)
 	fmt.Println(result)
 
-	time.Sleep(1 * time.Second)
+	// time.Sleep(1 * time.Second)
 
 	for i := 0; i < qps+5; i++ {
 		endpoints := proxy.GetServiceEndpoints(service)

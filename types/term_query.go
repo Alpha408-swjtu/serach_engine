@@ -4,11 +4,11 @@ import "strings"
 
 //最终版本的term_query结构
 
-type TermQuery struct {
-	Must    []*TermQuery
-	Should  []*TermQuery
-	Keyword *Keyword
-}
+// type TermQuery struct {
+// 	Must    []*TermQuery
+// 	Should  []*TermQuery
+// 	Keyword *Keyword
+// }
 
 func NewTermQuery(field, word string) *TermQuery {
 	return &TermQuery{Keyword: &Keyword{Field: field, Word: word}}
