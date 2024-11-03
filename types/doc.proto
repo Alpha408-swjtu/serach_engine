@@ -14,7 +14,6 @@ message Document {
     repeated Keyword Keywords = 4;
     bytes Bytes = 5; //业务实体序列化后的结果
 }
-
 //转成go文件 
 //github下protoc
 //go install github.com/gogo/protobuf/protoc-gen-gogofaster@latest，都要添加在环境变量里面！！！
